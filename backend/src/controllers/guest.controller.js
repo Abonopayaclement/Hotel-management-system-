@@ -1,0 +1,72 @@
+const db = require('../config/db');
+
+exports.getAllGuests = async (req, res) => {
+  try {
+    const { search, nationality } = req.query;
+    
+    let query = db('guests')
+      .leftJoin('bookings', 'guests.id', 'bookings.guest_id')
+      .leftJoin('rooms', 'bookings.room_id', 'rooms.id')
+      .select('guests.*', 'rooms.room_number as room', 'bookings.check_in', 'bookings.check_out', 'bookings.status as booking_status')
+      .orderBy('bookings.id', 'desc');
+
+    let guests = await query;
+    
+    // De-duplicate guests since join might return multiple rows per guest
+    const uniqueGuests = [];
+    const seenGuestIds = new Set();
+    
+    for (const g of guests) {
+      if (!seenGuestIds.has(g.id)) {
+        seenGuestIds.add(g.id);
+        uniqueGuests.push({
+          id: g.id,
+          name: g.full_name,
+          email: g.email,
+          phone: g.phone,
+          nationality: g.nationality,
+          room: g.room || 'None',
+          check_in: g.check_in || 'N/A',
+          check_out: g.check_out || 'N/A',
+          status: g.booking_status || 'Registered'
+        });
+      }
+    }
+
+    let result = uniqueGuests;
+    if (nationality) {
+      result = result.filter(g => g.nationality === nationality);
+    }
+    if (search) {
+      const q = search.toLowerCase();
+      result = result.filter(g => 
+        g.name.toLowerCase().includes(q) || 
+        g.email.toLowerCase().includes(q) || 
+        g.phone.toLowerCase().includes(q)
+      );
+    }
+
+    res.json({ success: true, data: result });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.getGuestById = async (req, res) => {
+  try {
+    const guest = await db('guests').where('id', req.params.id).first();
+    if (!guest) return res.status(404).json({ success: false, message: 'Guest not found' });
+    res.json({ success: true, data: guest });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.updateGuest = async (req, res) => {
+  try {
+    await db('guests').where('id', req.params.id).update(req.body);
+    res.json({ success: true, message: 'Guest updated' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
