@@ -73,15 +73,25 @@ exports.getOccupancyRate = async (req, res) => {
 exports.getPublicStats = async (req, res) => {
   try {
     const totalGuests = await db('guests').count('id as count').first();
-    const availableRooms = await db('rooms').where('status', 'Available').count('id as count').first();
+    const totalBookings = await db('bookings').whereNot('status', 'Cancelled').count('id as count').first();
     const totalRooms = await db('rooms').count('id as count').first();
+    const availableRooms = await db('rooms').where('status', 'Available').count('id as count').first();
+    const occupiedRooms = await db('rooms').where('status', 'Occupied').count('id as count').first();
+    const reservedRooms = await db('rooms').where('status', 'Reserved').count('id as count').first();
+    const cleaningRooms = await db('rooms').where('status', 'Cleaning').count('id as count').first();
+    const maintenanceRooms = await db('rooms').where('status', 'Maintenance').count('id as count').first();
     
     res.json({
       success: true,
       data: {
         totalGuests: totalGuests.count,
+        totalBookings: totalBookings.count,
+        totalRooms: totalRooms.count,
         availableRooms: availableRooms.count,
-        totalRooms: totalRooms.count
+        occupiedRooms: occupiedRooms.count,
+        reservedRooms: reservedRooms.count,
+        cleaningRooms: cleaningRooms.count,
+        maintenanceRooms: maintenanceRooms.count
       }
     });
   } catch (error) {

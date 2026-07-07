@@ -74,6 +74,29 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
   ];
 
+  const getAllowedMenuItems = () => {
+    const role = user?.role || '';
+    return menuItems.filter(item => {
+      if (role === 'Super Admin' || role === 'Hotel Manager') {
+        return true;
+      }
+      if (role === 'Accountant') {
+        return ['/dashboard', '/dashboard/bookings', '/dashboard/reservations', '/dashboard/finance', '/dashboard/notifications', '/dashboard/settings'].includes(item.href);
+      }
+      if (role === 'Receptionist') {
+        return ['/dashboard', '/dashboard/rooms', '/dashboard/bookings', '/dashboard/reservations', '/dashboard/guests', '/dashboard/housekeeping', '/dashboard/support', '/dashboard/notifications', '/dashboard/settings'].includes(item.href);
+      }
+      if (role === 'Housekeeper') {
+        return ['/dashboard', '/dashboard/rooms', '/dashboard/housekeeping', '/dashboard/notifications', '/dashboard/settings'].includes(item.href);
+      }
+      return ['/dashboard', '/dashboard/settings'].includes(item.href);
+    });
+  };
+
+  const allowedItems = getAllowedMenuItems();
+  const isAllowedRoute = allowedItems.some(item => pathname === item.href || pathname.startsWith(item.href + '/'));
+  const showAccessDenied = pathname.startsWith('/dashboard') && !isAllowedRoute;
+
   const handleLogout = () => {
     logout();
     router.push('/login');
@@ -100,7 +123,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
         </div>
 
         <nav className="flex-1 overflow-y-auto px-4 space-y-1 mt-4">
-          {menuItems.map((item) => (
+          {allowedItems.map((item) => (
             <SidebarItem 
               key={item.href}
               {...item}
@@ -174,7 +197,25 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
 
         {/* Page Content */}
         <div className="p-8">
-          {children}
+          {showAccessDenied ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-[40px] border border-gray-100 p-8 shadow-sm">
+              <div className="h-16 w-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mb-6">
+                <LogOut className="h-8 w-8" />
+              </div>
+              <h2 className="text-2xl font-bold text-secondary mb-2">Access Denied</h2>
+              <p className="text-gray-500 text-sm max-w-sm mb-6">
+                You do not have permissions to view this dashboard area. Please contact the administrator.
+              </p>
+              <Link
+                href="/dashboard"
+                className="bg-primary text-white px-6 py-3 rounded-2xl font-bold text-sm shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all"
+              >
+                Go to Dashboard Overview
+              </Link>
+            </div>
+          ) : (
+            children
+          )}
         </div>
       </main>
     </div>
