@@ -19,7 +19,13 @@ import {
   UserCircle,
   Briefcase,
   Box,
-  ClipboardList
+  ClipboardList,
+  Book,
+  BrushCleaning,
+  BrushCleaningIcon,
+  HeadphoneOffIcon,
+  HeadphonesIcon,
+  DollarSign
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 
@@ -56,16 +62,15 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const menuItems = [
     { icon: LayoutDashboard, label: 'Overview', href: '/dashboard' },
     { icon: BedDouble, label: 'Rooms', href: '/dashboard/rooms' },
-    { icon: CalendarCheck, label: 'Bookings', href: '/dashboard/bookings' },
+    { icon: Book, label: 'Bookings', href: '/dashboard/bookings' },
     { icon: CalendarCheck, label: 'Reservations', href: '/dashboard/reservations' },
     { icon: Users, label: 'Guests', href: '/dashboard/guests' },
     { icon: Briefcase, label: 'Staff', href: '/dashboard/staff' },
-    { icon: ClipboardList, label: 'Housekeeping', href: '/dashboard/housekeeping' },
+    { icon: BrushCleaningIcon, label: 'Housekeeping', href: '/dashboard/housekeeping' },
     { icon: Box, label: 'Inventory', href: '/dashboard/inventory' },
-    { icon: CreditCard, label: 'Payments', href: '/dashboard/payments' },
+    { icon: DollarSign, label: 'Finance', href: '/dashboard/finance' },
     { icon: Bell, label: 'Notifications', href: '/dashboard/notifications' },
-    { icon: ClipboardList, label: 'Reports', href: '/dashboard/reports' },
-    { icon: ClipboardList, label: 'Revenue', href: '/dashboard/revenue' },
+    { icon: HeadphonesIcon, label: 'Support', href: '/dashboard/support' },
     { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
   ];
 
@@ -75,13 +80,15 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] flex">
+    <div className="flex min-h-screen overflow-hidden bg-gray-50">
       {/* Sidebar - Desktop */}
-      <aside 
-        className={`hidden md:flex flex-col bg-white border-r border-gray-100 transition-all duration-300 ${
-          collapsed ? 'w-24' : 'w-72'
-        } fixed h-full z-30`}
-      >
+      <aside
+       onMouseEnter={() => setCollapsed(false)}
+       onMouseLeave={() => setCollapsed(true)}
+       className={`hidden md:flex flex-col bg-white border-r border-gray-100 transition-all duration-300 ${
+       collapsed ? 'w-24' : 'w-72'
+       } fixed top-0 left-0 h-screen overflow-y-auto z-30`}
+     >
         <div className="p-8 flex items-center justify-between">
           {!collapsed && (
             <Link href="/" className="flex items-center gap-2">
@@ -92,7 +99,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
           {collapsed && <div className="h-8 w-8 bg-primary rounded-lg mx-auto flex items-center justify-center text-white font-bold">H</div>}
         </div>
 
-        <nav className="flex-1 px-4 space-y-1 mt-4">
+        <nav className="flex-1 overflow-y-auto px-4 space-y-1 mt-4">
           {menuItems.map((item) => (
             <SidebarItem 
               key={item.href}
@@ -115,7 +122,11 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
       </aside>
 
       {/* Main Content Area */}
-      <main className={`flex-1 transition-all duration-300 ${collapsed ? 'md:ml-24' : 'md:ml-72'}`}>
+      <main
+       className={`flex-1 transition-all duration-300 min-w-0 ${
+       collapsed ? 'md:ml-24' : 'md:ml-72'
+       }`}
+       >
         {/* Header */}
         <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-100 h-20 flex items-center justify-between px-8">
           <div className="flex items-center gap-4">
@@ -138,10 +149,14 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
           </div>
 
           <div className="flex items-center gap-6">
-            <div className="relative p-2 hover:bg-gray-100 rounded-xl cursor-pointer transition-colors">
-              <Bell className="h-5 w-5 text-gray-500" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full border-2 border-white" />
-            </div>
+            
+            <Link
+              href="/dashboard/notifications"
+              className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
+             >
+             <Bell className="h-5 w-5 text-gray-500" />
+             <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full"></span>
+           </Link>
             
             <div className="h-8 w-[1px] bg-gray-100 mx-2" />
             

@@ -24,3 +24,19 @@ exports.markAsRead = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+exports.createNotification = async (req, res) => {
+  try {
+    const { message } = req.body;
+    const user_id = req.user ? req.user.id : 1;
+    const [id] = await db('notifications').insert({
+      user_id,
+      message,
+      is_read: false
+    });
+    res.status(201).json({ success: true, message: 'Notification created', id });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+

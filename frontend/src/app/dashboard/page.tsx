@@ -116,6 +116,8 @@ const DashboardOverview = () => {
           <div className="flex justify-between items-center mb-8">
             <h3 className="text-xl font-bold text-secondary">Revenue Trends</h3>
             <select className="bg-gray-50 border-none text-xs font-bold rounded-xl px-4 py-2 text-gray-500">
+              <option>Last 30 Days</option>
+              <option>Last 3 Months</option>
               <option>Last 6 Months</option>
               <option>Last Year</option>
             </select>

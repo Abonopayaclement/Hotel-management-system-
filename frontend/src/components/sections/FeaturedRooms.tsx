@@ -1,11 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Star, Users, Maximize, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import api from '@/lib/api';
 
-const rooms = [
+const fallbackRooms = [
   {
     id: 1,
     name: 'Presidential Suite',
@@ -36,6 +37,67 @@ const rooms = [
 ];
 
 const FeaturedRooms = () => {
+  const [roomsList, setRoomsList] = useState<any[]>(fallbackRooms);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFeatured = async () => {
+      try {
+        const response = await api.get('/rooms');
+        const dbRooms = response.data?.data || response.data || [];
+        
+        // Find one room for each type
+        const pres = dbRooms.find((r: any) => (r.type_name || '').toLowerCase().includes('presidential'));
+        const exec = dbRooms.find((r: any) => (r.type_name || '').toLowerCase().includes('executive'));
+        const del = dbRooms.find((r: any) => (r.type_name || '').toLowerCase().includes('deluxe'));
+        
+        const list = [];
+        if (pres) {
+          list.push({
+            id: pres.id,
+            name: pres.type_name || 'Presidential Suite',
+            price: pres.price_per_night || 1200,
+            image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=800&q=80',
+            capacity: pres.capacity || 4,
+            size: '120m²',
+            rating: 5.0
+          });
+        }
+        if (exec) {
+          list.push({
+            id: exec.id,
+            name: exec.type_name || 'Executive Room',
+            price: exec.price_per_night || 600,
+            image: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=800&q=80',
+            capacity: exec.capacity || 3,
+            size: '80m²',
+            rating: 4.9
+          });
+        }
+        if (del) {
+          list.push({
+            id: del.id,
+            name: del.type_name || 'Deluxe Room',
+            price: del.price_per_night || 400,
+            image: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=800&q=80',
+            capacity: del.capacity || 2,
+            size: '45m²',
+            rating: 4.8
+          });
+        }
+
+        if (list.length > 0) {
+          setRoomsList(list);
+        }
+      } catch (error) {
+        console.error('Failed to fetch rooms for FeaturedRooms', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchFeatured();
+  }, []);
+
   return (
     <section className="py-24 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -57,7 +119,7 @@ const FeaturedRooms = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {rooms.map((room, index) => (
+          {roomsList.map((room, index) => (
             <motion.div
               key={room.id}
               initial={{ opacity: 0, y: 20 }}
@@ -108,3 +170,4 @@ const FeaturedRooms = () => {
 };
 
 export default FeaturedRooms;
+

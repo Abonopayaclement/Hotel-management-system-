@@ -17,7 +17,7 @@ app.use(express.urlencoded({ extended: true }));
 // Rate Limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  max: process.env.NODE_ENV === 'development' ? 10000 : 100 // Allow more requests in development
 });
 app.use('/api/', limiter);
 
@@ -37,6 +37,10 @@ const staffRoutes = require('./routes/staff.routes');
 const housekeepingRoutes = require('./routes/housekeeping.routes');
 const inventoryRoutes = require('./routes/inventory.routes');
 const notificationRoutes = require('./routes/notification.routes');
+const serviceBookingRoutes = require('./routes/serviceBooking.routes');
+const foodOrderRoutes = require('./routes/foodOrder.routes');
+const supportRequestRoutes = require('./routes/supportRequest.routes');
+const financeRoutes = require('./routes/finance.routes');
 
 // Use Routes
 app.use('/api/auth', authRoutes);
@@ -49,6 +53,10 @@ app.use('/api/staff', staffRoutes);
 app.use('/api/housekeeping', housekeepingRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/service-bookings', serviceBookingRoutes);
+app.use('/api/food-orders', foodOrderRoutes);
+app.use('/api/support-requests', supportRequestRoutes);
+app.use('/api/finance', financeRoutes);
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

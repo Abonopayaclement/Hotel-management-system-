@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Hotel, User, LogOut } from 'lucide-react';
+import { Menu, X, Hotel, LogOut } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 
 const Navbar = () => {
@@ -25,10 +25,13 @@ const Navbar = () => {
     { name: 'Home', href: '/' },
     { name: 'Rooms', href: '/rooms' },
     { name: 'About', href: '/about' },
-    { name: 'Restaurant', href: '/restaurant' },
     { name: 'Gallery', href: '/gallery' },
     { name: 'Contact', href: '/contact' },
   ];
+
+
+
+  const dashboardHref = user?.role === 'Customer' ? '/guest-portal' : '/dashboard';
 
   return (
     <nav
@@ -47,29 +50,81 @@ const Navbar = () => {
 
           {/* Desktop Links */}
           <div className="hidden md:flex items-center space-x-8">
-            {navLinks.map((link) => (
-              <Link
-                key={link.name}
-                href={link.href}
-                className={`text-sm font-medium transition-colors hover:text-primary ${
-                  pathname === link.href 
-                    ? 'text-primary' 
-                    : scrolled ? 'text-secondary' : 'text-white/90'
-                }`}
-              >
-                {link.name}
-              </Link>
-            ))}
+            <Link
+              href="/"
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                pathname === '/' 
+                  ? 'text-primary' 
+                  : scrolled ? 'text-secondary' : 'text-white/90'
+              }`}
+            >
+              Home
+            </Link>
+
+            <Link
+              href="/rooms"
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                pathname.startsWith('/rooms') 
+                  ? 'text-primary' 
+                  : scrolled ? 'text-secondary' : 'text-white/90'
+              }`}
+            >
+              Rooms
+            </Link>
+
+            <Link
+              href="/services"
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                pathname.startsWith('/services')
+                  ? 'text-primary'
+                  : scrolled ? 'text-secondary' : 'text-white/90'
+              }`}
+            >
+              Services
+            </Link>
+
+            <Link
+              href="/about"
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                pathname === '/about' 
+                  ? 'text-primary' 
+                  : scrolled ? 'text-secondary' : 'text-white/90'
+              }`}
+            >
+              About
+            </Link>
+
+            <Link
+              href="/gallery"
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                pathname === '/gallery' 
+                  ? 'text-primary' 
+                  : scrolled ? 'text-secondary' : 'text-white/90'
+              }`}
+            >
+              Gallery
+            </Link>
+
+            <Link
+              href="/contact"
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                pathname === '/contact' 
+                  ? 'text-primary' 
+                  : scrolled ? 'text-secondary' : 'text-white/90'
+              }`}
+            >
+              Contact
+            </Link>
             
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">
                 <Link 
-                  href="/dashboard" 
+                  href={dashboardHref} 
                   className="bg-primary text-white px-5 py-2 rounded-full text-sm font-semibold hover:bg-primary/90 transition-all shadow-lg"
                 >
-                  Dashboard
+                  {user?.role === 'Customer' ? 'Guest Portal' : 'Dashboard'}
                 </Link>
-                <button onClick={logout} className={scrolled ? 'text-secondary' : 'text-white'}>
+                <button onClick={logout} className={`cursor-pointer ${scrolled ? 'text-secondary' : 'text-white'}`}>
                   <LogOut className="h-5 w-5" />
                 </button>
               </div>
@@ -78,7 +133,7 @@ const Navbar = () => {
                 href="/login"
                 className="bg-primary text-white px-6 py-2.5 rounded-full text-sm font-semibold hover:bg-primary/90 transition-all shadow-lg hover:shadow-primary/20"
               >
-                Book Now
+                Sign In
               </Link>
             )}
           </div>
@@ -105,7 +160,31 @@ const Navbar = () => {
             className="md:hidden bg-white border-b"
           >
             <div className="px-4 pt-2 pb-6 space-y-1">
-              {navLinks.map((link) => (
+              <Link
+                href="/"
+                className="block px-3 py-2 text-base font-medium text-secondary hover:text-primary"
+                onClick={() => setIsOpen(false)}
+              >
+                Home
+              </Link>
+
+              <Link
+                href="/rooms"
+                className="block px-3 py-2 text-base font-medium text-secondary hover:text-primary"
+                onClick={() => setIsOpen(false)}
+              >
+                Rooms
+              </Link>
+
+              <Link
+                href="/services"
+                className="block px-3 py-2 text-base font-medium text-secondary hover:text-primary"
+                onClick={() => setIsOpen(false)}
+              >
+                Services
+              </Link>
+
+              {navLinks.slice(2).map((link) => (
                 <Link
                   key={link.name}
                   href={link.href}
@@ -115,13 +194,35 @@ const Navbar = () => {
                   {link.name}
                 </Link>
               ))}
-              <Link
-                href="/login"
-                className="block w-full text-center mt-4 bg-primary text-white px-6 py-3 rounded-xl font-semibold"
-                onClick={() => setIsOpen(false)}
-              >
-                Book Now
-              </Link>
+
+              {isAuthenticated ? (
+                <div className="pt-4 border-t border-gray-100 flex flex-col gap-2">
+                  <Link
+                    href={dashboardHref}
+                    className="block w-full text-center bg-primary text-white px-6 py-3 rounded-xl font-semibold"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    {user?.role === 'Customer' ? 'Guest Portal' : 'Dashboard'}
+                  </Link>
+                  <button
+                    onClick={() => {
+                      logout();
+                      setIsOpen(false);
+                    }}
+                    className="block w-full text-center bg-gray-100 text-secondary px-6 py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
+                  >
+                    <LogOut className="h-4 w-4" /> Logout
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  className="block w-full text-center mt-4 bg-primary text-white px-6 py-3 rounded-xl font-semibold"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Sign In
+                </Link>
+              )}
             </div>
           </motion.div>
         )}

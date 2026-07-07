@@ -1,14 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { motion } from 'framer-motion';
-import { Hotel, Mail, Lock, User, ArrowRight, Loader2, Phone } from 'lucide-react';
+import { Hotel, Mail, Lock, User, ArrowRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 import { toast, Toaster } from 'sonner';
 
-const RegisterPage = () => {
+const RegisterContent = () => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -17,6 +17,8 @@ const RegisterPage = () => {
     confirmPassword: ''
   });
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams ? searchParams.get('redirect') : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +35,13 @@ const RegisterPage = () => {
       });
       if (response.data.success) {
         toast.success('Registration successful! Please login.');
-        setTimeout(() => router.push('/login'), 1500);
+        setTimeout(() => {
+          if (redirect) {
+            router.push(`/login?redirect=${encodeURIComponent(redirect)}`);
+          } else {
+            router.push('/login');
+          }
+        }, 1500);
       }
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Registration failed');
@@ -93,7 +101,7 @@ const RegisterPage = () => {
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                     placeholder="John Doe"
-                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:border-primary transition-all text-sm"
+                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-150 rounded-2xl focus:outline-none focus:border-primary transition-all text-sm"
                   />
                 </div>
               </div>
@@ -108,7 +116,7 @@ const RegisterPage = () => {
                     value={formData.email}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
                     placeholder="john@example.com"
-                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:border-primary transition-all text-sm"
+                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-150 rounded-2xl focus:outline-none focus:border-primary transition-all text-sm"
                   />
                 </div>
               </div>
@@ -123,7 +131,7 @@ const RegisterPage = () => {
                     value={formData.password}
                     onChange={(e) => setFormData({...formData, password: e.target.value})}
                     placeholder="••••••••"
-                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:border-primary transition-all text-sm"
+                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-150 rounded-2xl focus:outline-none focus:border-primary transition-all text-sm"
                   />
                 </div>
               </div>
@@ -138,7 +146,7 @@ const RegisterPage = () => {
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
                     placeholder="••••••••"
-                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:border-primary transition-all text-sm"
+                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-150 rounded-2xl focus:outline-none focus:border-primary transition-all text-sm"
                   />
                 </div>
               </div>
@@ -153,7 +161,13 @@ const RegisterPage = () => {
             </form>
 
             <p className="mt-8 text-center text-sm text-gray-500">
-              Already have an account? <Link href="/login" className="text-primary font-bold hover:underline">Login here</Link>
+              Already have an account?{' '}
+              <Link 
+                href={redirect ? `/login?redirect=${encodeURIComponent(redirect)}` : "/login"} 
+                className="text-primary font-bold hover:underline"
+              >
+                Login here
+              </Link>
             </p>
           </motion.div>
         </div>
@@ -162,4 +176,14 @@ const RegisterPage = () => {
   );
 };
 
-export default RegisterPage;
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[#F8F9FA]">
+        <div className="animate-spin h-10 w-10 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    }>
+      <RegisterContent />
+    </Suspense>
+  );
+}

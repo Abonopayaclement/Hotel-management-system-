@@ -56,7 +56,8 @@ exports.seed = async function(knex) {
     { name: 'Double', description: 'Comfortable double room for couples', price_per_night: 250.00, capacity: 2, amenities: JSON.stringify(['Free WiFi', 'AC', 'TV', 'Mini Bar']) },
     { name: 'Deluxe', description: 'Spacious deluxe room with city view', price_per_night: 400.00, capacity: 2, amenities: JSON.stringify(['Free WiFi', 'AC', 'TV', 'Mini Bar', 'Bathtub']) },
     { name: 'Executive', description: 'Premium executive room with lounge access', price_per_night: 600.00, capacity: 3, amenities: JSON.stringify(['Free WiFi', 'AC', 'TV', 'Mini Bar', 'Bathtub', 'Balcony']) },
-    { name: 'Presidential Suite', description: 'Ultimate luxury suite with all amenities', price_per_night: 1200.00, capacity: 4, amenities: JSON.stringify(['Free WiFi', 'AC', 'TV', 'Mini Bar', 'Bathtub', 'Private Terrace', 'Jacuzzi']) }
+    { name: 'Presidential Suite', description: 'Ultimate luxury suite with all amenities', price_per_night: 1200.00, capacity: 4, amenities: JSON.stringify(['Free WiFi', 'AC', 'TV', 'Mini Bar', 'Bathtub', 'Private Terrace', 'Jacuzzi']) },
+    { name: 'Duplex Suite', description: 'Two-story luxury suite with high ceilings and spiral staircase', price_per_night: 1800.00, capacity: 5, amenities: JSON.stringify(['Free WiFi', 'AC', 'TV', 'Mini Bar', 'Bathtub', 'Private Plunge Pool', 'Kitchenette']) }
   ];
   await knex('room_types').insert(roomTypes);
 
@@ -66,7 +67,7 @@ exports.seed = async function(knex) {
 
   // 4. Rooms
   const rooms = [];
-  const roomTypesList = ['Single', 'Double', 'Deluxe', 'Executive', 'Presidential Suite'];
+  const roomTypesList = ['Single', 'Double', 'Deluxe', 'Executive', 'Presidential Suite', 'Duplex Suite'];
   
   roomTypesList.forEach((typeName, index) => {
     for (let i = 1; i <= 5; i++) {
@@ -221,4 +222,31 @@ exports.seed = async function(knex) {
     { user_id: adminId, message: 'Payment Failed: GH₵150.00 payment failed for Abonopaya Clement', is_read: false }
   ];
   await knex('notifications').insert(notifications);
+
+  // 12. Seed Food Orders if table exists
+  const hasFoodOrders = await knex.schema.hasTable('food_orders');
+  if (hasFoodOrders) {
+    await knex('food_orders').del();
+    const foodOrders = [
+      { user_id: userMap['customer1@gmail.com'], items: 'Club Sandwich, French Fries, Coca Cola', total_price: 120.00, status: 'Completed', delivery_room: '101', created_at: '2026-06-16 12:30:00' },
+      { user_id: userMap['customer2@gmail.com'], items: 'Jollof Rice with Grilled Chicken, Fruit Juice', total_price: 85.00, status: 'Pending', delivery_room: '201', created_at: '2026-06-23 13:15:00' },
+      { user_id: userMap['customer1@gmail.com'], items: 'Assorted Pizza (Large), Garlic Bread, Red Wine', total_price: 320.00, status: 'Completed', delivery_room: '101', created_at: '2026-06-20 20:00:00' },
+      { user_id: userMap['customer2@gmail.com'], items: 'Banku with Tilapia, Water', total_price: 95.00, status: 'Cancelled', delivery_room: '201', created_at: '2026-06-22 18:45:00' }
+    ];
+    await knex('food_orders').insert(foodOrders);
+  }
+
+  // 13. Seed Service Bookings if table exists
+  const hasServiceBookings = await knex.schema.hasTable('service_bookings');
+  if (hasServiceBookings) {
+    await knex('service_bookings').del();
+    const serviceBookings = [
+      { user_id: userMap['customer1@gmail.com'], service_name: 'Massage / Spa Center', booking_date: '2026-06-16', booking_time: '14:00', status: 'Completed', notes: 'Swedish massage', created_at: '2026-06-16 10:00:00' },
+      { user_id: userMap['customer2@gmail.com'], service_name: 'Gym / Fitness Center', booking_date: '2026-06-21', booking_time: '08:00', status: 'Completed', notes: 'Cardio training session', created_at: '2026-06-20 17:00:00' },
+      { user_id: userMap['customer2@gmail.com'], service_name: 'Laundry', booking_date: '2026-06-24', booking_time: '10:00', status: 'Pending', notes: 'Wash and fold dry clean', created_at: '2026-06-23 09:00:00' },
+      { user_id: userMap['customer1@gmail.com'], service_name: 'Conference Hall', booking_date: '2026-06-25', booking_time: '09:00', status: 'Pending', notes: 'Corporate business retreat', created_at: '2026-06-22 11:30:00' },
+      { user_id: userMap['customer2@gmail.com'], service_name: 'Clinic', booking_date: '2026-06-18', booking_time: '11:00', status: 'Completed', notes: 'Routine checkup', created_at: '2026-06-18 10:30:00' }
+    ];
+    await knex('service_bookings').insert(serviceBookings);
+  }
 };

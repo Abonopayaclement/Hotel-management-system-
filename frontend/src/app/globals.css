@@ -28,10 +28,14 @@
   --radius: 0.75rem;
 }
 
+body, input, button, textarea, select {
+  font-family: var(--app-font-family, 'Inter', system-ui, -apple-system, sans-serif);
+}
+
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: var(--app-font-size, 16px);
   overflow-x: hidden;
 }
 
@@ -72,3 +76,23 @@ body {
 html {
   scroll-behavior: smooth;
 }
+
+/* Custom Scrollbar for sidebars / containers */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+

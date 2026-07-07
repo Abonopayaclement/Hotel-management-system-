@@ -1,20 +1,22 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { Hotel, Mail, Lock, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { toast, Toaster } from 'sonner';
 
-const LoginPage = () => {
+const LoginContent = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams ? searchParams.get('redirect') : null;
   const login = useAuthStore((state) => state.login);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -25,7 +27,17 @@ const LoginPage = () => {
       if (response.data.success) {
         login(response.data.user, response.data.token);
         toast.success('Login successful! Redirecting...');
-        setTimeout(() => router.push('/dashboard'), 1000);
+        
+        const role = response.data.user.role;
+        setTimeout(() => {
+          if (redirect) {
+            router.push(redirect);
+          } else if (role === 'Customer') {
+            router.push('/guest-portal');
+          } else {
+            router.push('/dashboard');
+          }
+        }, 1000);
       }
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Login failed. Please try again.');
@@ -50,12 +62,11 @@ const LoginPage = () => {
 
           <div className="relative z-10">
             <h2 className="text-4xl font-bold text-white mb-6 leading-tight">
-              Welcome back to <br />
+              Welcome to <br />
               <span className="text-gold-gradient">Elite Hospitality</span>
             </h2>
             <p className="text-white/60 text-sm leading-relaxed max-w-sm">
-              Manage your bookings, guests, and hotel operations with our world-class 
-              management system. Efficiency at your fingertips.
+              Access your personalized guest portal or staff management dashboard with secure access controls.
             </p>
           </div>
 
@@ -72,8 +83,8 @@ const LoginPage = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <h3 className="text-3xl font-bold text-secondary mb-2">Staff Login</h3>
-            <p className="text-gray-500 text-sm mb-10">Enter your credentials to access the dashboard.</p>
+            <h3 className="text-3xl font-bold text-secondary mb-2">Sign In</h3>
+            <p className="text-gray-500 text-sm mb-10">Enter your credentials to access your account portal.</p>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
@@ -85,8 +96,8 @@ const LoginPage = () => {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="name@holystar.com"
-                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:border-primary transition-all text-sm"
+                    placeholder="email@example.com"
+                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-150 rounded-2xl focus:outline-none focus:border-primary transition-all text-sm"
                   />
                 </div>
               </div>
@@ -101,7 +112,7 @@ const LoginPage = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full pl-12 pr-12 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:border-primary transition-all text-sm"
+                    className="w-full pl-12 pr-12 py-4 bg-gray-50 border border-gray-150 rounded-2xl focus:outline-none focus:border-primary transition-all text-sm"
                   />
                   <button
                     type="button"
@@ -133,7 +144,13 @@ const LoginPage = () => {
             </form>
 
             <p className="mt-8 text-center text-sm text-gray-500">
-              Not a staff member? <Link href="/register" className="text-primary font-bold hover:underline">Register here</Link>
+              Not a member?{' '}
+              <Link 
+                href={redirect ? `/register?redirect=${encodeURIComponent(redirect)}` : "/register"} 
+                className="text-primary font-bold hover:underline"
+              >
+                Register here
+              </Link>
             </p>
           </motion.div>
         </div>
@@ -142,4 +159,14 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[#F8F9FA]">
+        <div className="animate-spin h-10 w-10 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
+  );
+}

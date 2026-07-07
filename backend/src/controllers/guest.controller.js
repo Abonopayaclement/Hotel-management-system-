@@ -70,3 +70,56 @@ exports.updateGuest = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+exports.getMyProfile = async (req, res) => {
+  try {
+    const guest = await db('guests').where('user_id', req.user.id).first();
+    if (!guest) {
+      return res.json({ 
+        success: true, 
+        data: { 
+          full_name: req.user.name, 
+          email: req.user.email,
+          phone: '', 
+          nationality: '', 
+          id_type: 'Passport', 
+          id_number: '' 
+        } 
+      });
+    }
+    res.json({ success: true, data: guest });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.updateMyProfile = async (req, res) => {
+  try {
+    const { full_name, phone, nationality, id_type, id_number } = req.body;
+    let guest = await db('guests').where('user_id', req.user.id).first();
+    if (!guest) {
+      const [id] = await db('guests').insert({
+        user_id: req.user.id,
+        full_name: full_name || req.user.name,
+        email: req.user.email,
+        phone: phone || '',
+        nationality: nationality || '',
+        id_type: id_type || 'Passport',
+        id_number: id_number || ''
+      });
+      return res.json({ success: true, message: 'Profile created', id });
+    } else {
+      await db('guests').where('user_id', req.user.id).update({
+        full_name: full_name || guest.full_name,
+        phone: phone !== undefined ? phone : guest.phone,
+        nationality: nationality !== undefined ? nationality : guest.nationality,
+        id_type: id_type !== undefined ? id_type : guest.id_type,
+        id_number: id_number !== undefined ? id_number : guest.id_number
+      });
+      return res.json({ success: true, message: 'Profile updated' });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
