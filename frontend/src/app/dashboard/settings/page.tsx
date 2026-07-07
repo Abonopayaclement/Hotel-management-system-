@@ -19,8 +19,11 @@ import {
 import { motion } from 'framer-motion';
 import { toast, Toaster } from 'sonner';
 import { loadSiteSettings, saveSiteSettings, defaultSiteSettings } from '@/lib/siteSettings';
+import { useAuthStore } from '@/store/authStore';
 
 const SettingsPage = () => {
+  const { user } = useAuthStore();
+  
   const [theme, setTheme] = useState<'light' | 'dark' | 'auto'>('light');
   const [primaryColor, setPrimaryColor] = useState('#B8860B');
   const [secondaryColor, setSecondaryColor] = useState('#1A237E');
@@ -94,6 +97,8 @@ const SettingsPage = () => {
       toast.info('Form fields reset. Click Save changes to apply.');
     }
   };
+
+  const isSuperAdminOrManager = ['Super Admin', 'Hotel Manager'].includes(user?.role || '');
 
   return (
     <DashboardLayout>
@@ -236,107 +241,109 @@ const SettingsPage = () => {
           </div>
         </motion.div>
 
-        {/* Hotel Information Settings */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.2 }}
-          className="bg-white rounded-[40px] border border-gray-100 p-8 card-hover shadow-sm"
-        >
-          <div className="flex items-center gap-3 mb-8">
-            <div className="h-10 w-10 bg-accent rounded-lg flex items-center justify-center text-primary border border-primary/10">
-              <Building2 className="h-6 w-6" />
-            </div>
-            <h2 className="text-2xl font-bold text-secondary">Hotel & Branding Details</h2>
-          </div>
-
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500">Hotel Name</label>
-                <input
-                  type="text"
-                  value={hotelName}
-                  onChange={(e) => setHotelName(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-150 rounded-xl focus:outline-none focus:border-primary text-sm font-medium"
-                />
+        {/* Hotel Information Settings - Restricted to Super Admin & Hotel Manager */}
+        {isSuperAdminOrManager && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="bg-white rounded-[40px] border border-gray-100 p-8 card-hover shadow-sm"
+          >
+            <div className="flex items-center gap-3 mb-8">
+              <div className="h-10 w-10 bg-accent rounded-lg flex items-center justify-center text-primary border border-primary/10">
+                <Building2 className="h-6 w-6" />
               </div>
-
-              <div className="space-y-2">
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500">Branding Slogan / Tagline</label>
-                <input
-                  type="text"
-                  value={brandingText}
-                  onChange={(e) => setBrandingText(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-150 rounded-xl focus:outline-none focus:border-primary text-sm font-medium"
-                />
-              </div>
+              <h2 className="text-2xl font-bold text-secondary">Hotel & Branding Details</h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="space-y-2">
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1">
-                  <Phone className="h-3.5 w-3.5" /> General Phone
-                </label>
-                <input
-                  type="tel"
-                  value={hotelPhone}
-                  onChange={(e) => setHotelPhone(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-150 rounded-xl focus:outline-none focus:border-primary text-sm font-medium"
-                />
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500">Hotel Name</label>
+                  <input
+                    type="text"
+                    value={hotelName}
+                    onChange={(e) => setHotelName(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-150 rounded-xl focus:outline-none focus:border-primary text-sm font-medium"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500">Branding Slogan / Tagline</label>
+                  <input
+                    type="text"
+                    value={brandingText}
+                    onChange={(e) => setBrandingText(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-150 rounded-xl focus:outline-none focus:border-primary text-sm font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1">
+                    <Phone className="h-3.5 w-3.5" /> General Phone
+                  </label>
+                  <input
+                    type="tel"
+                    value={hotelPhone}
+                    onChange={(e) => setHotelPhone(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-150 rounded-xl focus:outline-none focus:border-primary text-sm font-medium"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1">
+                    <MessageCircle className="h-3.5 w-3.5" /> WhatsApp Support
+                  </label>
+                  <input
+                    type="text"
+                    value={whatsapp}
+                    onChange={(e) => setWhatsapp(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-150 rounded-xl focus:outline-none focus:border-primary text-sm font-medium"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1">
+                    <Mail className="h-3.5 w-3.5" /> Reservations Email
+                  </label>
+                  <input
+                    type="email"
+                    value={hotelEmail}
+                    onChange={(e) => setHotelEmail(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-150 rounded-xl focus:outline-none focus:border-primary text-sm font-medium"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1">
+                    <HelpCircle className="h-3.5 w-3.5" /> Customer Care Email
+                  </label>
+                  <input
+                    type="email"
+                    value={supportEmail}
+                    onChange={(e) => setSupportEmail(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-150 rounded-xl focus:outline-none focus:border-primary text-sm font-medium"
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
                 <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1">
-                  <MessageCircle className="h-3.5 w-3.5" /> WhatsApp Support
+                  <FileText className="h-3.5 w-3.5" /> Business Location Address
                 </label>
-                <input
-                  type="text"
-                  value={whatsapp}
-                  onChange={(e) => setWhatsapp(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-150 rounded-xl focus:outline-none focus:border-primary text-sm font-medium"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1">
-                  <Mail className="h-3.5 w-3.5" /> Reservations Email
-                </label>
-                <input
-                  type="email"
-                  value={hotelEmail}
-                  onChange={(e) => setHotelEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-150 rounded-xl focus:outline-none focus:border-primary text-sm font-medium"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1">
-                  <HelpCircle className="h-3.5 w-3.5" /> Customer Care Email
-                </label>
-                <input
-                  type="email"
-                  value={supportEmail}
-                  onChange={(e) => setSupportEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-150 rounded-xl focus:outline-none focus:border-primary text-sm font-medium"
+                <textarea
+                  value={hotelAddress}
+                  onChange={(e) => setHotelAddress(e.target.value)}
+                  rows={3}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-150 rounded-xl focus:outline-none focus:border-primary text-sm resize-none font-medium"
                 />
               </div>
             </div>
-
-            <div className="space-y-2">
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1">
-                <FileText className="h-3.5 w-3.5" /> Business Location Address
-              </label>
-              <textarea
-                value={hotelAddress}
-                onChange={(e) => setHotelAddress(e.target.value)}
-                rows={3}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-150 rounded-xl focus:outline-none focus:border-primary text-sm resize-none font-medium"
-              />
-            </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        )}
 
         {/* Notifications & System Preferences */}
         <motion.div

@@ -3,13 +3,28 @@ const db = require('../config/db');
 exports.getAllStaff = async (req, res) => {
   try {
     const { search } = req.query;
+    
+    // Check if the user is authorized to see salaries
+    const isAdminOrManager = ['Super Admin', 'Hotel Manager'].includes(req.user.role);
+    
+    const selectFields = [
+      'staff.id',
+      'staff.user_id',
+      'staff.position',
+      'staff.department',
+      'staff.created_at',
+      'staff.updated_at',
+      'users.name',
+      'users.email'
+    ];
+    
+    if (isAdminOrManager) {
+      selectFields.push('staff.salary');
+    }
+
     let query = db('staff')
       .join('users', 'staff.user_id', 'users.id')
-      .select(
-        'staff.*',
-        'users.name',
-        'users.email'
-      );
+      .select(selectFields);
 
     if (search) {
       query = query.where(function() {
