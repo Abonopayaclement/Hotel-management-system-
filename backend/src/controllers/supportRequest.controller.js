@@ -56,9 +56,16 @@ exports.createSupportRequest = async (req, res) => {
       }
     }
 
+    // Find a valid admin/user ID dynamically to avoid foreign key errors on MySQL
+    const adminUser = await db('users')
+      .join('roles', 'users.role_id', 'roles.id')
+      .where('roles.name', 'Super Admin')
+      .first();
+    const adminId = adminUser ? adminUser.id : 9; // Fallback to 9 (Super Admin seed ID) or first user in DB
+
     // Create a notification for staff/admin
     await db('notifications').insert({
-      user_id: 1, // Default Admin user ID
+      user_id: adminId,
       message: `Support Ticket: Room ${room_number || 'N/A'} submitted a ${category} request (${urgency || 'Medium'} urgency).`
     });
 

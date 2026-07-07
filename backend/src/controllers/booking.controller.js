@@ -189,10 +189,16 @@ exports.updateBookingStatus = async (req, res) => {
       .where('bookings.id', req.params.id)
       .first();
 
+    const adminUser = await db('users')
+      .join('roles', 'users.role_id', 'roles.id')
+      .where('roles.name', 'Super Admin')
+      .first();
+    const fallbackUserId = req.user ? req.user.id : (adminUser ? adminUser.id : 9);
+
     if (status === 'Checked In') {
       await db('rooms').where('id', booking.room_id).update({ status: 'Occupied' });
       await db('notifications').insert({
-        user_id: req.user ? req.user.id : 1,
+        user_id: fallbackUserId,
         message: `Guest Check-In: ${booking.guest_name} checked into Room ${booking.room_number}.`
       });
     } else if (status === 'Checked Out') {
@@ -216,13 +222,13 @@ exports.updateBookingStatus = async (req, res) => {
       }
 
       await db('notifications').insert({
-        user_id: req.user ? req.user.id : 1,
+        user_id: fallbackUserId,
         message: `Guest Check-Out: ${booking.guest_name} checked out of Room ${booking.room_number}.`
       });
     } else if (status === 'Cancelled') {
       await db('rooms').where('id', booking.room_id).update({ status: 'Available' });
       await db('notifications').insert({
-        user_id: req.user ? req.user.id : 1,
+        user_id: fallbackUserId,
         message: `Booking Cancelled: Booking #${booking.id} for guest ${booking.guest_name} has been cancelled.`
       });
     }
