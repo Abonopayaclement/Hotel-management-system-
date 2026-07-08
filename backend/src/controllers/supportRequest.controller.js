@@ -4,6 +4,19 @@ exports.createSupportRequest = async (req, res) => {
   try {
     const { guest_name, email, phone, room_number, category, description, urgency } = req.body;
 
+    // Validate that the room exists and is currently occupied
+    const match = room_number ? room_number.match(/\d+/) : null;
+    const rawRoomNum = match ? match[0] : '';
+    if (rawRoomNum) {
+      const room = await db('rooms').where({ room_number: rawRoomNum }).first();
+      if (!room) {
+        return res.status(400).json({ success: false, message: 'Invalid room number. Please check and try again.' });
+      }
+      if (room.status !== 'Occupied') {
+        return res.status(400).json({ success: false, message: `Room ${rawRoomNum} is not currently occupied. There is no guest in this room.` });
+      }
+    }
+
     const [id] = await db('support_requests').insert({
       guest_name,
       email,
