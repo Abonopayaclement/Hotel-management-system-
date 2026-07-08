@@ -2,18 +2,44 @@ const db = require('../config/db');
 
 exports.createSupportRequest = async (req, res) => {
   try {
-    const { guest_name, email, phone, room_number, category, description, urgency } = req.body;
+    const { guest_name, email, phone, room_number, category, description, image_url } = req.body;
 
     // Validate that the room exists and is currently occupied
     const match = room_number ? room_number.match(/\d+/) : null;
     const rawRoomNum = match ? match[0] : '';
+    let room = null;
     if (rawRoomNum) {
-      const room = await db('rooms').where({ room_number: rawRoomNum }).first();
+      room = await db('rooms').where({ room_number: rawRoomNum }).first();
       if (!room) {
         return res.status(400).json({ success: false, message: 'Invalid room number. Please check and try again.' });
       }
       if (room.status !== 'Occupied') {
         return res.status(400).json({ success: false, message: `Room ${rawRoomNum} is not currently occupied. There is no guest in this room.` });
+      }
+    }
+
+    // Auto-calculate priority (urgency) based on category and description keywords
+    const desc = (description || '').toLowerCase();
+    let calculatedUrgency = 'Medium';
+    
+    // Check extreme urgency keywords
+    if (desc.includes('fire') || desc.includes('smoke') || desc.includes('flood') || desc.includes('burst') || desc.includes('spark') || desc.includes('shock') || desc.includes('emergency') || desc.includes('injur') || desc.includes('danger')) {
+      calculatedUrgency = 'High';
+    } else {
+      // Map standard categories
+      if (category === 'Electrical issue' || category === 'Plumbing issue' || category === 'Electrical' || category === 'Plumbing') {
+        calculatedUrgency = 'High';
+      } else if (category === 'Maintenance problem' || category === 'Maintenance' || category === 'Internet') {
+        calculatedUrgency = 'Medium';
+      } else if (category === 'Cleaning' || category === 'Room Service' || category === 'Room cleaning request' || category === 'Housekeeping request' || category === 'Other') {
+        calculatedUrgency = 'Low';
+      }
+      
+      // Elevate priority on keywords
+      if (calculatedUrgency === 'Low' && (desc.includes('urgent') || desc.includes('leak') || desc.includes('broken') || desc.includes('spill') || desc.includes('smell'))) {
+        calculatedUrgency = 'Medium';
+      } else if (calculatedUrgency === 'Medium' && (desc.includes('urgent') || desc.includes('leak') || desc.includes('broken') || desc.includes('no power') || desc.includes('water flowing') || desc.includes('overflow'))) {
+        calculatedUrgency = 'High';
       }
     }
 
@@ -24,48 +50,48 @@ exports.createSupportRequest = async (req, res) => {
       room_number,
       category,
       description,
-      urgency: urgency || 'Medium',
-      status: 'Pending'
+      urgency: calculatedUrgency,
+      status: 'Pending',
+      image_url: image_url || null
     });
 
-    // Automatically update room and housekeeping status if room_number matches
-    const match = room_number ? room_number.match(/\d+/) : null;
-    const rawRoomNum = match ? match[0] : '';
-    if (rawRoomNum) {
-      const room = await db('rooms').where({ room_number: rawRoomNum }).first();
-      if (room) {
-        let newStatus = null;
-        if (category === 'Room cleaning request' || category === 'Housekeeping request') {
-          newStatus = 'Cleaning';
-          
-          // Upsert housekeeping task
-          const existing = await db('housekeeping').where({ room_id: room.id }).first();
-          if (existing) {
-            await db('housekeeping').where({ room_id: room.id }).update({
-              status: 'Dirty',
-              last_cleaned: null,
-              staff_id: null
-            });
-          } else {
-            await db('housekeeping').insert({
-              room_id: room.id,
-              status: 'Dirty',
-              last_cleaned: null,
-              staff_id: null
-            });
-          }
-        } else if ([
-          'Maintenance problem',
-          'Electrical issue',
-          'Plumbing issue',
-          'AC / TV / Wi-Fi not working'
-        ].includes(category)) {
-          newStatus = 'Maintenance';
+    // Automatically update room and housekeeping status if room exists
+    if (room) {
+      let newStatus = null;
+      if (category === 'Room cleaning request' || category === 'Housekeeping request' || category === 'Cleaning') {
+        newStatus = 'Cleaning';
+        
+        // Upsert housekeeping task
+        const existing = await db('housekeeping').where({ room_id: room.id }).first();
+        if (existing) {
+          await db('housekeeping').where({ room_id: room.id }).update({
+            status: 'Dirty',
+            last_cleaned: null,
+            staff_id: null
+          });
+        } else {
+          await db('housekeeping').insert({
+            room_id: room.id,
+            status: 'Dirty',
+            last_cleaned: null,
+            staff_id: null
+          });
         }
+      } else if ([
+        'Maintenance problem',
+        'Electrical issue',
+        'Plumbing issue',
+        'AC / TV / Wi-Fi not working',
+        'Maintenance',
+        'Plumbing',
+        'Electrical',
+        'Internet'
+      ].includes(category)) {
+        newStatus = 'Maintenance';
+      }
 
-        if (newStatus) {
-          await db('rooms').where({ id: room.id }).update({ status: newStatus });
-        }
+      if (newStatus) {
+        await db('rooms').where({ id: room.id }).update({ status: newStatus });
       }
     }
 

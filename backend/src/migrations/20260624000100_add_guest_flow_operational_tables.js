@@ -74,6 +74,7 @@ exports.up = async function(knex) {
       table.text('description').notNullable();
       table.string('urgency').defaultTo('Medium');
       table.string('status').defaultTo('Pending');
+      table.string('image_url').nullable();
       table.timestamps(true, true);
     });
   }

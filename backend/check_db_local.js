@@ -24,6 +24,7 @@ async function check() {
         table.text('description').notNullable();
         table.string('urgency').defaultTo('Medium');
         table.string('status').defaultTo('Pending');
+        table.string('image_url').nullable();
         table.timestamps(true, true);
       });
       console.log('Created support_requests table.');

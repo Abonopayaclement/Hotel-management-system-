@@ -28,7 +28,9 @@ import {
   Edit2,
   Check,
   CreditCard,
-  Hash
+  Hash,
+  Wrench,
+  FileText
 } from 'lucide-react';
 import api from '@/lib/api';
 import { toast, Toaster } from 'sonner';
@@ -66,13 +68,29 @@ export default function GuestPortal() {
   const [paymentNumber, setPaymentNumber] = useState('');
   const [processingPayment, setProcessingPayment] = useState(false);
 
+  // Room Issue Modal States
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [issuePhone, setIssuePhone] = useState('');
+  const [issueEmail, setIssueEmail] = useState('');
+  const [issueCategory, setIssueCategory] = useState('Cleaning');
+  const [issueDescription, setIssueDescription] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [submittingIssue, setSubmittingIssue] = useState(false);
+
+  // Derive guest checked-in room
+  const checkedInBooking = bookings.find(b => b.status === 'Checked In') 
+    || bookings.find(b => b.status === 'Confirmed') 
+    || bookings[0];
+  const guestRoomNumber = checkedInBooking ? checkedInBooking.room_number : '';
+
   const fetchData = async () => {
     try {
       setLoading(true);
       
       // 1. Fetch Room Bookings
       const bookingsRes = await api.get('/bookings/my-bookings');
-      setBookings(bookingsRes.data?.data || bookingsRes.data || []);
+      const loadedBookings = bookingsRes.data?.data || bookingsRes.data || [];
+      setBookings(loadedBookings);
       
       // 2. Fetch Service Bookings
       const servicesRes = await api.get('/service-bookings/my');
@@ -85,16 +103,22 @@ export default function GuestPortal() {
       // 4. Fetch Guest Profile
       const profileRes = await api.get('/guests/profile/me');
       if (profileRes.data?.success && profileRes.data.data) {
-        setGuestProfile(profileRes.data.data);
+        const profile = profileRes.data.data;
+        setGuestProfile(profile);
+        setIssuePhone(profile.phone || '');
+        setIssueEmail(profile.email || '');
       } else {
-        setGuestProfile({
+        const defaultProfile = {
           full_name: user?.name || '',
           email: user?.email || '',
           phone: '',
           nationality: '',
           id_type: 'Passport',
           id_number: ''
-        });
+        };
+        setGuestProfile(defaultProfile);
+        setIssuePhone('');
+        setIssueEmail(user?.email || '');
       }
 
     } catch (error) {
@@ -181,16 +205,62 @@ export default function GuestPortal() {
     }
   };
 
+  // Convert uploaded image to base64
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImageUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Submit Room Issue
+  const handleReportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!guestRoomNumber) {
+      toast.error('You do not have an active room checked in to submit a room issue.');
+      return;
+    }
+    
+    setSubmittingIssue(true);
+    try {
+      const payload = {
+        guest_name: user?.name || '',
+        room_number: guestRoomNumber,
+        phone: issuePhone,
+        email: issueEmail,
+        category: issueCategory,
+        description: issueDescription,
+        image_url: imageUrl || null
+      };
+
+      const res = await api.post('/support-requests', payload);
+      if (res.data.success) {
+        toast.success('Room issue reported successfully!');
+        setIsReportModalOpen(false);
+        setIssueDescription('');
+        setImageUrl('');
+        fetchData();
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to submit room issue.');
+    } finally {
+      setSubmittingIssue(false);
+    }
+  };
+
   const getStatusBadge = (status: string, paymentStatus?: string) => {
     const s = status.toLowerCase();
     const ps = paymentStatus?.toLowerCase();
 
-    // Custom statuses as requested
     if (s === 'pending' && ps === 'pending') {
       return <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-yellow-55 text-yellow-700 border border-yellow-200 uppercase"><Clock className="h-3 w-3" /> Pending Payment</span>;
     }
     if (s === 'pending') {
-      return <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-yellow-50 text-yellow-600 border border-yellow-100 uppercase"><Clock className="h-3 w-3" /> Reserved</span>;
+      return <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-yellow-55 text-yellow-600 border border-yellow-100 uppercase"><Clock className="h-3 w-3" /> Reserved</span>;
     }
     if (s === 'confirmed' || ps === 'paid') {
       return <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-green-55 text-green-700 border border-green-200 uppercase"><CheckCircle className="h-3 w-3" /> Confirmed</span>;
@@ -414,44 +484,63 @@ export default function GuestPortal() {
               </div>
             )}
 
-            {/* Quick Navigation Links */}
+            {/* Quick Actions List Menu */}
             <div className="bg-white p-6 rounded-[32px] shadow-premium border border-gray-100 space-y-4">
-              <h4 className="font-bold text-secondary text-sm">Quick Actions</h4>
-              <div className="flex flex-col gap-2.5">
-                <Link
-                  href="/"
-                  className="w-full text-left py-2.5 px-4 bg-gray-50 hover:bg-gray-100 text-secondary rounded-xl text-xs font-bold transition-all flex items-center justify-between"
-                >
-                  <span>Go to Homepage</span>
-                  <ArrowRight className="h-3.5 w-3.5 text-gray-400" />
-                </Link>
-                <Link
-                  href="/rooms"
-                  className="w-full text-left py-2.5 px-4 bg-gray-50 hover:bg-gray-100 text-secondary rounded-xl text-xs font-bold transition-all flex items-center justify-between"
-                >
-                  <span>Book New Room</span>
-                  <PlusCircle className="h-3.5 w-3.5 text-gray-400" />
-                </Link>
-                <Link
-                  href="/restaurant"
-                  className="w-full text-left py-2.5 px-4 bg-gray-50 hover:bg-gray-100 text-secondary rounded-xl text-xs font-bold transition-all flex items-center justify-between"
-                >
-                  <span>Order Dining / Food</span>
-                  <Utensils className="h-3.5 w-3.5 text-gray-400" />
-                </Link>
+              <h4 className="font-bold text-secondary text-sm">Quick Actions Menu</h4>
+              <div className="flex flex-col gap-2">
                 <Link
                   href="/services"
-                  className="w-full text-left py-2.5 px-4 bg-gray-50 hover:bg-gray-100 text-secondary rounded-xl text-xs font-bold transition-all flex items-center justify-between"
+                  className="w-full text-left py-3 px-4 bg-gray-50 hover:bg-primary hover:text-white rounded-2xl text-xs font-bold transition-all flex items-center justify-between group cursor-pointer"
                 >
-                  <span>Schedule Spa & Leisure</span>
-                  <Sparkles className="h-3.5 w-3.5 text-gray-400" />
+                  <span className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-gray-400 group-hover:text-white" /> Book a Service</span>
+                  <ArrowRight className="h-3.5 w-3.5 text-gray-400 group-hover:text-white group-hover:translate-x-1 transition-all" />
                 </Link>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('rooms');
+                    const element = document.getElementById('activity-tabs-content');
+                    if (element) element.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="w-full text-left py-3 px-4 bg-gray-50 hover:bg-primary hover:text-white rounded-2xl text-xs font-bold transition-all flex items-center justify-between group cursor-pointer"
+                >
+                  <span className="flex items-center gap-2"><Calendar className="h-4 w-4 text-gray-400 group-hover:text-white" /> View Reservations</span>
+                  <ArrowRight className="h-3.5 w-3.5 text-gray-400 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                </button>
+
+                <button
+                  onClick={() => {
+                    const element = document.getElementById('activity-tabs-content');
+                    if (element) element.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="w-full text-left py-3 px-4 bg-gray-50 hover:bg-primary hover:text-white rounded-2xl text-xs font-bold transition-all flex items-center justify-between group cursor-pointer"
+                >
+                  <span className="flex items-center gap-2"><CreditCard className="h-4 w-4 text-gray-400 group-hover:text-white" /> View Payments</span>
+                  <ArrowRight className="h-3.5 w-3.5 text-gray-400 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                </button>
+
+                <button
+                  onClick={() => setIsReportModalOpen(true)}
+                  className="w-full text-left py-3 px-4 bg-gray-50 hover:bg-primary hover:text-white rounded-2xl text-xs font-bold transition-all flex items-center justify-between group cursor-pointer border border-primary/10"
+                >
+                  <span className="flex items-center gap-2"><Wrench className="h-4 w-4 text-gray-400 group-hover:text-white" /> Report Room Issue</span>
+                  <ArrowRight className="h-3.5 w-3.5 text-gray-400 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                </button>
+
                 <Link
                   href="/contact"
-                  className="w-full text-left py-2.5 px-4 bg-gray-50 hover:bg-gray-100 text-secondary rounded-xl text-xs font-bold transition-all flex items-center justify-between"
+                  className="w-full text-left py-3 px-4 bg-gray-50 hover:bg-primary hover:text-white rounded-2xl text-xs font-bold transition-all flex items-center justify-between group cursor-pointer"
                 >
-                  <span>Contact Hotel Support</span>
-                  <HelpCircle className="h-3.5 w-3.5 text-gray-400" />
+                  <span className="flex items-center gap-2"><HelpCircle className="h-4 w-4 text-gray-400 group-hover:text-white" /> Contact Reception</span>
+                  <ArrowRight className="h-3.5 w-3.5 text-gray-400 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                </Link>
+
+                <Link
+                  href="/"
+                  className="w-full text-left py-3 px-4 bg-gray-50 hover:bg-primary hover:text-white rounded-2xl text-xs font-bold transition-all flex items-center justify-between group cursor-pointer"
+                >
+                  <span className="flex items-center gap-2"><FileText className="h-4 w-4 text-gray-400 group-hover:text-white" /> Back to Home</span>
+                  <ArrowRight className="h-3.5 w-3.5 text-gray-400 group-hover:text-white group-hover:translate-x-1 transition-all" />
                 </Link>
               </div>
             </div>
@@ -459,7 +548,7 @@ export default function GuestPortal() {
           </div>
 
           {/* Activity Logs & Tabs */}
-          <div className="lg:col-span-3 space-y-8">
+          <div className="lg:col-span-3 space-y-8" id="activity-tabs-content">
             
             {/* Tab selection */}
             <div className="bg-white p-3 rounded-[24px] shadow-premium border border-gray-100 flex gap-2 w-full md:w-fit">
@@ -776,6 +865,134 @@ export default function GuestPortal() {
                   className="px-8 py-3 bg-primary hover:bg-primary/90 text-white rounded-2xl font-bold text-sm shadow-lg shadow-primary/15 transition-all flex items-center gap-2"
                 >
                   {processingPayment ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Pay Bill <Check className="h-4 w-4" /></>}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Report Room Issue Modal */}
+      {isReportModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <motion.div 
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-[32px] p-8 max-w-lg w-full shadow-2xl relative overflow-hidden max-h-[90vh] overflow-y-auto"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-accent/20 rounded-full -mr-16 -mt-16 blur-2xl" />
+
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h3 className="text-2xl font-bold text-secondary">Report Room Issue</h3>
+                <p className="text-gray-500 text-xs mt-1">Submit maintenance, cleaning, or room service requests directly.</p>
+              </div>
+              <button 
+                onClick={() => setIsReportModalOpen(false)}
+                className="h-8 w-8 rounded-full bg-gray-50 hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+              >
+                <XCircle className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleReportSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Guest Name</label>
+                  <input 
+                    type="text" 
+                    readOnly
+                    value={user?.name || ''} 
+                    className="w-full px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-xs font-semibold text-gray-500 cursor-not-allowed" 
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Room Number</label>
+                  <input 
+                    type="text" 
+                    readOnly
+                    value={guestRoomNumber || 'N/A'} 
+                    className="w-full px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-xs font-semibold text-gray-500 cursor-not-allowed" 
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Phone Number</label>
+                  <input 
+                    type="tel" 
+                    required
+                    value={issuePhone} 
+                    onChange={(e) => setIssuePhone(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-150 rounded-xl text-xs" 
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Email Address</label>
+                  <input 
+                    type="email" 
+                    required
+                    value={issueEmail} 
+                    onChange={(e) => setIssueEmail(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-150 rounded-xl text-xs" 
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Issue Category</label>
+                <select 
+                  value={issueCategory}
+                  onChange={(e) => setIssueCategory(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-150 rounded-xl text-xs font-semibold text-secondary cursor-pointer"
+                >
+                  <option value="Cleaning">Cleaning</option>
+                  <option value="Maintenance">Maintenance</option>
+                  <option value="Plumbing">Plumbing</option>
+                  <option value="Electrical">Electrical</option>
+                  <option value="Internet">Internet</option>
+                  <option value="Room Service">Room Service</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Issue Description</label>
+                <textarea 
+                  required
+                  value={issueDescription} 
+                  onChange={(e) => setIssueDescription(e.target.value)}
+                  rows={4}
+                  placeholder="Describe your request or issue in detail..."
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-150 rounded-xl text-xs resize-none" 
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Upload Image (Optional)</label>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-150 rounded-xl text-xs file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:bg-accent file:text-primary hover:file:bg-accent/80 file:cursor-pointer" 
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsReportModalOpen(false)}
+                  className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-secondary rounded-2xl font-bold text-xs cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingIssue}
+                  className="px-8 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-2xl font-bold text-xs shadow-lg shadow-primary/15 transition-all flex items-center gap-2 cursor-pointer"
+                >
+                  {submittingIssue ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Submit Issue <Check className="h-4 w-4" /></>}
                 </button>
               </div>
             </form>

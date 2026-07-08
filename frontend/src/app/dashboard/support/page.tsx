@@ -116,6 +116,17 @@ const SupportDashboardPage = () => {
                 {/* Description */}
                 <p className="text-gray-600 text-sm mb-6 leading-relaxed bg-gray-50 p-4 rounded-2xl border border-gray-100">{req.description}</p>
 
+                {/* Optional Image Preview */}
+                {req.image_url && (
+                  <div className="mb-6 rounded-2xl overflow-hidden border border-gray-100 max-h-48 flex items-center justify-center bg-gray-50">
+                    <img 
+                      src={req.image_url} 
+                      alt="User reported issue attachment" 
+                      className="object-contain max-w-full max-h-48"
+                    />
+                  </div>
+                )}
+
                 {/* Contact info */}
                 <div className="space-y-2 text-xs text-gray-500 mb-8">
                   <p className="flex items-center gap-2"><User className="h-4 w-4 text-gray-400" /> Guest: <span className="font-bold text-secondary">{req.guest_name}</span></p>
